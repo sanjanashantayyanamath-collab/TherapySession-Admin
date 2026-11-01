@@ -1,0 +1,1 @@
+export function EmptyState({ title = 'Nothing here yet', description }) { return <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center dark:border-slate-700"><h2 className="font-semibold">{title}</h2>{description && <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{description}</p>}</div>; }

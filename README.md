@@ -96,6 +96,30 @@ Notes expire automatically through a MongoDB TTL index. `retainUntil` is appoint
 | Ciphertext tampering or record copying | AES-GCM authentication plus record-bound AAD causes decryption failure                            |
 | Key leak                               | Rotate versioned keys, retain prior keys only for decrypt, and run the rekey script               |
 
+## Phase 5 client setup
+
+The React 18 client keeps access tokens in memory only. The refresh token is sent automatically by the browser as an `httpOnly` cookie; client JavaScript never reads or stores it. In development, Vite proxies `/api` to the server so the strict refresh-cookie policy remains same-origin.
+
+Install and run both applications from PowerShell:
+
+```powershell
+cd "server"
+npm install
+npm run dev
+
+cd "..\client"
+npm install
+npm run dev
+```
+
+Copy `client/.env.example` to `client/.env` only when overriding the default API base URL:
+
+```text
+VITE_API_BASE_URL=/api/v1
+```
+
+Seeded development accounts are configured by the server seed environment variables. After running `npm run seed` in `server`, use a seeded admin or counsellor email and its configured password at `http://localhost:5173/login`. The client foundation currently provides login, session restoration, protected routing, role guards, responsive navigation, privacy notice, and placeholder dashboard/schedule/appointment/admin pages; appointment forms and calendar interactions are scheduled for Phase 6.
+
 ## Privacy & Security Design
 
 - `User` stores only staff identity and authentication data required for administration.
