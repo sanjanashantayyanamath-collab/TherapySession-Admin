@@ -15,13 +15,20 @@ async function start() {
 
 async function shutdown(signal) {
   console.log(`${signal} received; shutting down.`);
+  const forceExit = setTimeout(() => {
+    console.error('Forced shutdown after timeout.');
+    process.exit(1);
+  }, 10_000);
+  forceExit.unref();
   server.close(async (error) => {
     if (error) {
       console.error('HTTP server shutdown failed.', error);
       process.exitCode = 1;
     }
 
+    server.closeIdleConnections?.();
     await disconnectDatabase();
+    clearTimeout(forceExit);
   });
 }
 

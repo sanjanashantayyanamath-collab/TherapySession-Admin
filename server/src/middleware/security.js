@@ -17,9 +17,6 @@ export function applySecurityMiddleware(app) {
       methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     }),
   );
-  app.use(express.json({ limit: '100kb' }));
-  app.use(mongoSanitize());
-  app.use(hpp());
   app.use(
     rateLimit({
       windowMs: 15 * 60 * 1000,
@@ -28,4 +25,14 @@ export function applySecurityMiddleware(app) {
       legacyHeaders: false,
     }),
   );
+  app.use(express.json({ limit: '100kb' }));
+  app.use(mongoSanitize());
+  app.use(hpp());
 }
+
+export const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+});
