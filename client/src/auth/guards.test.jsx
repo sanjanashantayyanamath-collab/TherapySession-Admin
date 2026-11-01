@@ -21,3 +21,9 @@ test('role route hides admin page from counsellors', () => {
   render(<MemoryRouter initialEntries={['/admin']}><Routes><Route element={<RoleRoute roles={['admin']} />}><Route path="/admin" element={<span>admin</span>} /></Route><Route path="/" element={<span>home</span>} /></Routes></MemoryRouter>);
   expect(screen.getByText('home')).toBeInTheDocument();
 });
+
+test('role route allows admins into the admin page', () => {
+  auth = { initializing: false, isAuthenticated: true, user: { role: 'admin' } };
+  render(<MemoryRouter initialEntries={['/admin']}><Routes><Route element={<RoleRoute roles={['admin']} />}><Route path="/admin" element={<span>admin</span>} /></Route><Route path="/" element={<span>home</span>} /></Routes></MemoryRouter>);
+  expect(screen.getByText('admin')).toBeInTheDocument();
+});
