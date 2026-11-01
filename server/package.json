@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "seed": "node scripts/seed.js",
-    "generate:secrets": "node scripts/generate-secrets.js"
+    "generate:secrets": "node scripts/generate-secrets.js",
+    "notes:rekey": "node scripts/rekey-notes.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

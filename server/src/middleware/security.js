@@ -36,3 +36,11 @@ export const authRateLimiter = rateLimit({
   standardHeaders: 'draft-8',
   legacyHeaders: false,
 });
+
+export const noteRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  keyGenerator: (request) => request.user?._id?.toString() || request.ip,
+});

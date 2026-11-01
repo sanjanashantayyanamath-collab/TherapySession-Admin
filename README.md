@@ -4,7 +4,7 @@ Privacy-first appointment administration for counsellors. The application stores
 
 ## Current phase
 
-Phase 3 adds appointment scheduling metadata, availability, aggregate statistics, and admin user management. Private notes remain separate and are added in a later phase.
+Phase 4 adds encrypted private notes with counsellor-author-only access, audit events, and automatic retention.
 
 ## Phase 1 setup
 
@@ -74,6 +74,27 @@ Appointments use UTC dates on the wire and are validated against `WORK_START_HOU
 ### Data minimisation
 
 Scheduling stores only a counsellor reference, pseudonymous `clientCode`, time, session type, status, and attendance. It never accepts or stores client names, phone numbers, emails, addresses, diagnoses, dates of birth, notes, or free text.
+
+## Private notes design
+
+Private notes are stored in the separate `PrivateNote` collection and are never joined into appointment, list, stats, or admin-user responses. Only the counsellor who owns the appointment can read, replace, or delete its note. Administrators and other counsellors receive the same `404 NOT_FOUND` response as a missing note.
+
+Notes use AES-256-GCM with a fresh 12-byte IV and a 16-byte authentication tag for every write. Additional authenticated data binds the ciphertext to `appointmentId:counsellorId:keyVersion`, so copying or moving ciphertext to another record fails authentication. The database stores ciphertext, IV, authentication tag, key version, and retention metadata only.
+
+Configure `NOTES_ENCRYPTION_KEY` for the current 32-byte base64 key. For rotation, configure `NOTES_ENCRYPTION_KEYS` as a JSON object mapping versions to base64 keys and set `NOTES_ENCRYPTION_CURRENT_VERSION`. Previous keys remain decrypt-only. Run `npm run notes:rekey` after rotation to migrate all notes to the current key.
+
+Notes expire automatically through a MongoDB TTL index. `retainUntil` is appointment end time plus `NOTE_RETENTION_DAYS` and is refreshed whenever a note is replaced. Note responses use `Cache-Control: no-store` and `Pragma: no-cache`.
+
+### Private-notes threat model
+
+| Threat                                 | Mitigation                                                                                        |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Stolen database dump                   | Note content is encrypted at rest; only ciphertext and cryptographic metadata are stored          |
+| Curious administrator                  | Admin routes have no note exception and receive the same 404 response                             |
+| Another counsellor                     | Appointment ownership is checked before every note operation                                      |
+| Log leakage                            | Request bodies and note content are excluded/redacted; audit entries contain action metadata only |
+| Ciphertext tampering or record copying | AES-GCM authentication plus record-bound AAD causes decryption failure                            |
+| Key leak                               | Rotate versioned keys, retain prior keys only for decrypt, and run the rekey script               |
 
 ## Privacy & Security Design
 

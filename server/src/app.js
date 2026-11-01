@@ -15,6 +15,7 @@ import appointmentRoutes from './routes/appointmentRoutes.js';
 import availabilityRoutes from './routes/availabilityRoutes.js';
 import statsRoutes from './routes/statsRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import noteRoutes from './routes/noteRoutes.js';
 
 export function createApp() {
   const app = express();
@@ -22,7 +23,12 @@ export function createApp() {
   app.set('env', env.NODE_ENV);
   app.use(
     pinoHttp({
-      genReqId: (request) => request.get('x-request-id') || crypto.randomUUID(),
+      genReqId: (request) => {
+        const incoming = request.get('x-request-id');
+        return incoming && /^[A-Za-z0-9-]{8,64}$/.test(incoming)
+          ? incoming
+          : crypto.randomUUID();
+      },
       serializers: {
         req: (request) => ({
           id: request.id,
@@ -34,10 +40,15 @@ export function createApp() {
       redact: [
         'req.headers.authorization',
         'req.headers.cookie',
+        'req.body.content',
         'res.headers["set-cookie"]',
       ],
     }),
   );
+  app.use((request, response, next) => {
+    response.set('X-Request-Id', request.id);
+    next();
+  });
   applySecurityMiddleware(app);
   app.use(cookieParser());
 
@@ -58,6 +69,7 @@ export function createApp() {
   app.use('/api/v1/availability', availabilityRoutes);
   app.use('/api/v1/stats', statsRoutes);
   app.use('/api/v1/users', userRoutes);
+  app.use('/api/v1/appointments', noteRoutes);
   app.use(notFound);
   app.use(errorHandler);
 
