@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { connectDatabase, disconnectDatabase } from '../src/config/database.js';
 import { env } from '../src/config/env.js';
 import User from '../src/models/User.js';

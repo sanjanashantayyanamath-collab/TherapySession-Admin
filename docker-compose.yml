@@ -1,0 +1,38 @@
+services:
+  web:
+    build: ./client
+    ports:
+      - "8080:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+  api:
+    build: ./server
+    env_file: .env
+    expose:
+      - "4000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+  mongo:
+    image: mongo:8
+    command: ["mongod", "--bind_ip_all", "--replSet", "rs0"]
+    expose:
+      - "27017"
+    volumes:
+      - mongo-data:/data/db
+    # MongoDB must be a replica set because appointment booking uses
+    # transactions. The healthcheck both probes readiness and initializes the
+    # single-node rs0 set on first startup.
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'mongosh --quiet --eval "try { rs.status().ok } catch (e) { rs.initiate({_id:''rs0'', members:[{_id:0, host:''mongo:27017''}]}).ok }" | grep 1',
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
+volumes:
+  mongo-data:

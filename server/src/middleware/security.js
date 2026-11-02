@@ -9,7 +9,14 @@ import { env } from '../config/env.js';
 export function applySecurityMiddleware(app) {
   app.disable('x-powered-by');
   app.set('trust proxy', env.TRUST_PROXY);
-  app.use(helmet());
+  app.use(
+    helmet({
+      strictTransportSecurity:
+        env.NODE_ENV === 'production'
+          ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+          : false,
+    }),
+  );
   app.use(
     cors({
       origin: env.CORS_ORIGIN,

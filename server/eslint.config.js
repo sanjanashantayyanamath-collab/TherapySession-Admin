@@ -23,7 +23,7 @@ export default [
     },
   },
   {
-    files: ['tests/**/*.js'],
+    files: ['tests/**/*.js', 'server/tests/**/*.js'],
     languageOptions: {
       globals: {
         ...nodeGlobals,
@@ -36,7 +36,7 @@ export default [
     },
   },
   {
-    files: ['tests/**/*.cjs'],
+    files: ['tests/**/*.cjs', 'server/tests/**/*.cjs'],
     languageOptions: { sourceType: 'commonjs', globals: nodeGlobals },
   },
 ];

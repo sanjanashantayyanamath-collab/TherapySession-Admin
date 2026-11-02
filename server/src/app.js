@@ -16,8 +16,11 @@ import availabilityRoutes from './routes/availabilityRoutes.js';
 import statsRoutes from './routes/statsRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
+import { openApiDocument } from './docs/openapi.js';
 
-export function createApp() {
+export function createApp({
+  docsEnabled = env.NODE_ENV !== 'production',
+} = {}) {
   const app = express();
 
   app.set('env', env.NODE_ENV);
@@ -62,6 +65,11 @@ export function createApp() {
       .status(ready ? 200 : 503)
       .json({ status: ready ? 'ready' : 'not_ready' });
   });
+  if (docsEnabled) {
+    app.get('/api/docs', (_request, response) =>
+      response.json(openApiDocument),
+    );
+  }
   app.use('/api/v1/auth/login', authRateLimiter);
   app.use('/api/v1/auth/refresh', authRateLimiter);
   app.use('/api/v1/auth', authRoutes);

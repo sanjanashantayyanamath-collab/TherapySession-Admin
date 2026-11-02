@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+set -e
+if git diff --cached --name-only | grep -E '(^|/)\.env$' >/dev/null; then
+  echo "Refusing to commit .env files."
+  exit 1
+fi
+npx lint-staged

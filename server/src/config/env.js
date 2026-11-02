@@ -39,6 +39,44 @@ const envSchema = z.object({
 
 const parsedEnv = envSchema
   .superRefine((value, context) => {
+    const placeholders = [
+      'replace-with-a-long-random-secret',
+      'replace-with-a-different-long-random-secret',
+      'replace-with-32-byte-base64-key',
+    ];
+    if (
+      value.NODE_ENV === 'production' &&
+      placeholders.some((placeholder) =>
+        [
+          value.ACCESS_TOKEN_SECRET,
+          value.REFRESH_TOKEN_SECRET,
+          value.NOTES_ENCRYPTION_KEY,
+        ].includes(placeholder),
+      )
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['secrets'],
+        message: 'production secrets must not use .env.example placeholders',
+      });
+    }
+    if (value.NODE_ENV === 'production' && value.TRUST_PROXY !== true) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['TRUST_PROXY'],
+        message: 'must be true in production',
+      });
+    }
+    if (
+      value.NODE_ENV === 'production' &&
+      !value.CORS_ORIGIN.startsWith('https://')
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['CORS_ORIGIN'],
+        message: 'must use HTTPS in production',
+      });
+    }
     if (value.ACCESS_TOKEN_SECRET === value.REFRESH_TOKEN_SECRET) {
       context.addIssue({
         code: z.ZodIssueCode.custom,

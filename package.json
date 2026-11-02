@@ -1,0 +1,25 @@
+{
+  "name": "therapysession-admin-workspace",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "lint-staged": "lint-staged"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.0"
+  },
+  "lint-staged": {
+    "client/**/*.{js,jsx}": [
+      "client/node_modules/.bin/eslint --config client/eslint.config.js --fix",
+      "client/node_modules/.bin/prettier --write"
+    ],
+    "server/**/*.js": [
+      "server/node_modules/.bin/eslint --config server/eslint.config.js --fix",
+      "server/node_modules/.bin/prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "client/node_modules/.bin/prettier --write"
+    ]
+  }
+}

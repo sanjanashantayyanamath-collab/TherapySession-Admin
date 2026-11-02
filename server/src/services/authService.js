@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import RefreshToken from '../models/RefreshToken.js';
 import AuditLog from '../models/AuditLog.js';
@@ -55,27 +55,37 @@ export async function refresh(rawToken, ip) {
   if (!rawToken)
     throw new AppError(401, 'UNAUTHORIZED', 'Authentication required.');
   const hash = hashToken(rawToken);
-  const token = await RefreshToken.findOne({ tokenHash: hash }).select(
+  const now = new Date();
+  const candidate = await RefreshToken.findOne({ tokenHash: hash }).select(
     '+tokenHash',
   );
-  if (!token)
+  if (!candidate)
     throw new AppError(401, 'UNAUTHORIZED', 'Authentication required.');
-  if (token.revokedAt) {
+  if (candidate.expiresAt <= now)
+    throw new AppError(401, 'UNAUTHORIZED', 'Authentication required.');
+  const user = await User.findById(candidate.userId);
+  if (!user || !user.isActive)
+    throw new AppError(401, 'UNAUTHORIZED', 'Authentication required.');
+  const replacement = await createRefreshToken(user._id, candidate.family);
+  const token = await RefreshToken.findOneAndUpdate(
+    { tokenHash: hash, revokedAt: null },
+    { $set: { revokedAt: now } },
+    { new: true },
+  ).select('+tokenHash');
+  if (!token) {
     await RefreshToken.updateMany(
-      { family: token.family, revokedAt: null },
-      { $set: { revokedAt: new Date() } },
+      { family: candidate.family, revokedAt: null },
+      { $set: { revokedAt: now } },
+    );
+    await RefreshToken.updateOne(
+      { _id: replacement.document._id, revokedAt: null },
+      { $set: { revokedAt: now } },
     );
     throw new AppError(401, 'TOKEN_REUSE', 'Refresh token reuse detected.');
   }
-  if (token.expiresAt <= new Date())
-    throw new AppError(401, 'UNAUTHORIZED', 'Authentication required.');
-  const user = await User.findById(token.userId);
-  if (!user || !user.isActive)
-    throw new AppError(401, 'UNAUTHORIZED', 'Authentication required.');
-  const replacement = await createRefreshToken(user._id, token.family);
   await RefreshToken.updateOne(
-    { _id: token._id, revokedAt: null },
-    { $set: { revokedAt: new Date(), replacedBy: replacement.document._id } },
+    { _id: token._id },
+    { $set: { replacedBy: replacement.document._id } },
   );
   await AuditLog.create({
     actorId: user._id,

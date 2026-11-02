@@ -4,7 +4,7 @@ import {
   setRefreshCookie,
 } from '../utils/cookies.js';
 import { login, refresh, revoke } from '../services/authService.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 
 export async function loginController(request, response) {

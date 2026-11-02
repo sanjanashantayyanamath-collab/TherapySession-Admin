@@ -1,8 +1,9 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import User from '../src/models/User.js';
 import RefreshToken from '../src/models/RefreshToken.js';
+import { authRateLimiter } from '../src/middleware/security.js';
 
 const app = createApp();
 const password = 'CorrectHorse1!';
@@ -34,8 +35,46 @@ test('logs in, rotates refresh token, and detects reuse', async () => {
   expect(reused.status).toBe(401);
   expect(reused.body.code).toBe('TOKEN_REUSE');
   expect(await RefreshToken.countDocuments({ revokedAt: { $ne: null } })).toBe(
-    2,
+    3,
   );
+});
+
+test('atomically rotates one of ten concurrent refresh requests', async () => {
+  const user = await createUser({ email: 'concurrent@example.invalid' });
+  const login = await request(app)
+    .post('/api/v1/auth/login')
+    .send({ email: user.email, password });
+  const cookie = login.headers['set-cookie'][0];
+  authRateLimiter.resetKey('::ffff:127.0.0.1');
+  authRateLimiter.resetKey('127.0.0.1');
+
+  const responses = await Promise.all(
+    Array.from({ length: 10 }, () =>
+      request(app).post('/api/v1/auth/refresh').set('Cookie', cookie),
+    ),
+  );
+
+  expect(responses.filter((response) => response.status === 200)).toHaveLength(
+    1,
+  );
+  expect(responses.filter((response) => response.status === 401)).toHaveLength(
+    9,
+  );
+  expect(
+    responses.filter((response) => response.body.code === 'TOKEN_REUSE'),
+  ).toHaveLength(9);
+  const original = await RefreshToken.findOne({
+    userId: user._id,
+    replacedBy: { $ne: null },
+  });
+  expect(
+    await RefreshToken.countDocuments({
+      family: original.family,
+      revokedAt: null,
+    }),
+  ).toBe(0);
+  authRateLimiter.resetKey('::ffff:127.0.0.1');
+  authRateLimiter.resetKey('127.0.0.1');
 });
 
 test('uses generic failures and locks after five invalid passwords', async () => {
