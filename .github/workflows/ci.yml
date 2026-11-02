@@ -20,7 +20,7 @@ jobs:
           --health-interval 5s --health-timeout 10s --health-retries 20 --health-start-period 10s
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with: { node-version: 20 }
       - run: npm audit --omit=dev --audit-level=high
         working-directory: server
