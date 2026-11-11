@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import Admin from './models/Admin.js';
 import Counsellor from './models/Counsellor.js';
+import dns from 'node:dns';
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 const username = (process.env.SEED_ADMIN_USERNAME || 'admin').toLowerCase();
 const password = process.env.SEED_ADMIN_PASSWORD;
